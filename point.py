@@ -6,5 +6,3 @@ class Point:
 
     def get_position(self) -> tuple:
         return (self.x, self.y, self.z)
-    
-    
