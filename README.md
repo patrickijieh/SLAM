@@ -1,8 +1,24 @@
 # SLAM
 SLAM
 
-- For each frame, figure out the camera's relative position and orientation (angle its facing)
+## Feature detection ##
+- Detect ORB features in each frame
+- Use Lowe's ratio test to find corresponding features between frames
+- Use RANSAC to remove false matches
 
-- Detect the features in each frame, figure out where those features are relative to the camera
+##  Motion estimation ##
+- Calculate essential matrix between consecutive frames (camera rotation and translation)
+- Refine motion by using bundle adjustment to optimize camera poses
 
-- Plot the camera's position as well as the features 
+## Landmark management ##
+- Create and track landmarks across frames
+- Reconstruct 3D landmarks based on observations from multiple camera poses
+- Use bundle adjustment to refine positions and handle occlusion
+
+## Loop closure ##
+- Identify previous locations seen
+- Adjust past camera pose
+- Use graph optimization 
+
+## Visualization ##
+- Plot camera trajectory and landmarks in 3D
