@@ -1,26 +1,31 @@
 import cv2
+import os
+import numpy as np
 
 # Load the video
-video_path = r'D:\Projects\slam\videos\drive.mp4'
-cap = cv2.VideoCapture(video_path)
+frames_path = r'videos\2011_09_26_drive_0023_sync\2011_09_26\2011_09_26_drive_0023_sync\image_02\data'
 
 # Create an ORB object
 orb = cv2.ORB_create(nfeatures=1000)
-
-if not cap.isOpened():
-    print("Error: Could not open video.")
-    exit()
 
 # Initialize previous keypoints and descriptors
 prev_keypoints = None
 prev_descriptors = None
 
-ratio_threshold = 1.8 # Adjust this value to make Lowe's ratio less strict
+ratio_threshold = 0.7 # Adjust this value to make Lowe's ratio less strict
 
-while cap.isOpened():
-    ret, frame = cap.read()
-    if not ret:
-        break
+frame_files = [f for f in os.listdir(frames_path) if f.endswith('.png')]
+
+def apply_lowes_ratio_test(matches, ratio=0.75):
+    good_matches = []
+    for m, n in matches:
+        if m.distance < ratio * n.distance:
+            good_matches.append(m)
+    return good_matches
+
+
+for frame_file in frame_files:
+    frame = cv2.imread(os.path.join(frames_path, frame_file))
 
     # Convert the frame to grayscale
     gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
@@ -30,12 +35,23 @@ while cap.isOpened():
 
     # Match features with previous frame using Lowe's ratio test
     if prev_descriptors is not None:
-        matcher = cv2.BFMatcher(cv2.NORM_HAMMING, crossCheck=True)
-        matches = matcher.match(prev_descriptors, descriptors)
-        matches = sorted(matches, key=lambda x: x.distance)
-        good_matches = [m for m in matches if m.distance < ratio_threshold * matches[0].distance]
+        matcher = cv2.BFMatcher(cv2.NORM_HAMMING)
+        matches = matcher.knnMatch(prev_descriptors, descriptors, k=2)
 
-        print(len(good_matches))
+        # Apply Lowe's ratio test
+        good_matches = apply_lowes_ratio_test(matches, ratio_threshold)
+
+        obj = []
+        scene = []
+
+        for match in good_matches:
+            obj.append(prev_keypoints[match.queryIdx].pt)
+            scene.append(keypoints[match.trainIdx].pt)
+
+        H = cv2.findHomography(np.array(obj), np.array(scene), cv2.RANSAC, 5.0)[0]
+
+        print(H.shape)
+        #print(len(good_matches))
         # Draw matched keypoints on the frame
         frame_with_matches = cv2.drawMatches(prev_frame, prev_keypoints, frame, keypoints, good_matches, None, flags=cv2.DRAW_MATCHES_FLAGS_NOT_DRAW_SINGLE_POINTS)
 
@@ -48,5 +64,4 @@ while cap.isOpened():
     prev_keypoints = keypoints
     prev_descriptors = descriptors
 
-cap.release()
 cv2.destroyAllWindows()
