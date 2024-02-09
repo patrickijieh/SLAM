@@ -23,7 +23,6 @@ def orb_create():
 # Main function
 
 def main():
-  print("Hello World!")
   orb_create()
 
 if __name__ == "__main__":
